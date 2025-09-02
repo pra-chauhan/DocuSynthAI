@@ -8,7 +8,7 @@ load_dotenv()
 
 # Constants
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
-LLM_MODEL_NAME = "llama3-70b-8192"
+LLM_MODEL_NAME = "llama-3.3-70b-versatile"
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 200
 TOP_K = 3

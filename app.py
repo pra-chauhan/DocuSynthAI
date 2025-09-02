@@ -24,6 +24,9 @@ from bs4 import BeautifulSoup
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
 import base64
+from dotenv import load_dotenv
+load_dotenv()
+
 
 st.set_page_config(
     page_title="LegalDoc Analyst",
@@ -554,7 +557,7 @@ def main():
             # Email Reports Section
             with st.container(border=True):
                 st.subheader("Email Reports")
-                email = st.text_input("Recipient Email Address", placeholder="legal@company.com")
+                email = st.text_input("Recipient Email Address", placeholder="Docusynthai@gmail.com")
                 
                 email_col1, email_col2 = st.columns(2)
                 
