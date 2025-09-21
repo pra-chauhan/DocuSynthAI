@@ -138,9 +138,13 @@ def generate_pdf(summary, risk_data, legal_updates=None, compliance_data=None):
         st.error(f"Failed to generate PDF: {str(e)}")
         return BytesIO(b"")
 
+# st.write("DEBUG API Key:", sendgrid_api_key[:10] + "...")
+# st.write("DEBUG Sender:", sender_email)
+
+
 def send_email(recipient_email, attachment=None, subject=None, body=None, attachment_name=None):
     try:
-        sendgrid_api_key, sender_email = get_sendgrid_credentials()
+        SENDGRID_API_KEY, SENDER_EMAIL = get_sendgrid_credentials()
     except ValueError as e:
         return False, f"⚠ {e}"
 
@@ -154,7 +158,7 @@ def send_email(recipient_email, attachment=None, subject=None, body=None, attach
         """
 
     message = Mail(
-        from_email=sender_email,
+        from_email=SENDER_EMAIL,
         to_emails=recipient_email,
         subject=subject,
         html_content=body
@@ -174,7 +178,7 @@ def send_email(recipient_email, attachment=None, subject=None, body=None, attach
         message.attachment = file_attachment
 
     try:
-        sg = SendGridAPIClient(sendgrid_api_key)
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
         response = sg.send(message)
         return True, f"Email sent successfully. Status code: {response.status_code}"
     except Exception as e:

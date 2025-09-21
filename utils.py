@@ -48,6 +48,9 @@ def load_sentiment_analyzer():
 def get_sendgrid_credentials():
     sendgrid_api_key = os.getenv("SENDGRID_API_KEY")
     sender_email = os.getenv("SENDER_EMAIL")
+    # Debug check
+    # st.write("DEBUG API Key:", (sendgrid_api_key[:10] + "...") if sendgrid_api_key else "None")
+    # st.write("DEBUG Sender:", sender_email if sender_email else "None")
     if not sendgrid_api_key or not sender_email:
         raise ValueError("Missing SendGrid API Key or Sender Email in environment variables.")
     return sendgrid_api_key, sender_email
