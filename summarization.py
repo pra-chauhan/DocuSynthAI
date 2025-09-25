@@ -10,7 +10,7 @@ import os
 def load_llm():
     try:
         return ChatGroq(
-            model_name="llama-3.3-70b-versatile", 
+            model_name="llama-3.1-8b-instant", 
             api_key=os.getenv("GROQ_API_KEY"),
             request_timeout=30
         )
