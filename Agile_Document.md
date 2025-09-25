@@ -7,7 +7,6 @@
 
 
 
-
 The project aims to develop an **AI-powered system for efficiently summarizing legal documents and conducting comprehensive risk assessments** using **LLMs, advanced NLP models, and vector databases**. This intelligent system automates **clause extraction, regulatory compliance verification, anomaly detection, and legal risk identification**, significantly enhancing accuracy, speed, and reliability in document processing while reducing manual effort.
 
 ### Problem Statement & Significance

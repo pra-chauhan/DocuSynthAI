@@ -1,5 +1,8 @@
+import os
+os.environ["STREAMLIT_WATCH_MODULES"] = "false"
 import plotly.express as px
 import nltk
+import re
 nltk.download(['punkt', 'punkt_tab', 'averaged_perceptron_tagger', 'vader_lexicon'])
 import streamlit as st
 import base64
@@ -23,14 +26,6 @@ from bs4 import BeautifulSoup
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Attachment, FileContent, FileName, FileType, Disposition
 import base64
-from dotenv import load_dotenv
-import os
-
-os.environ["STREAMLIT_WATCHER_TYPE"] = "none"
-import nest_asyncio
-nest_asyncio.apply()
-
-load_dotenv()
 
 
 st.set_page_config(
@@ -43,10 +38,10 @@ st.set_page_config(
 # Initialize NLP resources
 import nltk
 import os
-nltk.data.path.append(os.path.join(os.getcwd(), "nltk_data")) # Or your preferred path
+nltk.data.path.append(os.path.join(os.getcwd(), "nltk_data")) 
 
 try:
-    nltk.download('vader_lexicon', download_dir=os.path.join(os.getcwd(), "nltk_data")) #optional
+    nltk.download('vader_lexicon', download_dir=os.path.join(os.getcwd(), "nltk_data")) 
 except LookupError as e:
     st.error(f"Error downloading NLTK resources: {e}.  Please check your internet connection and try again.")
     st.stop()
@@ -56,7 +51,7 @@ from nltk.sentiment import SentimentIntensityAnalyzer
 
 from document_processing import extract_text_from_pdf
 from document_processing import chunk_text, create_faiss_index
-from rag import generate_rag_response
+from rag import generate_rag_response, llm
 from risk_analysis import advanced_risk_assessment, visualize_risks
 from summarization import generate_summary
 from comparison import compare_documents, export_comparison_report, compare_documents_tabular
@@ -66,6 +61,36 @@ from utils import initialize_session_state
 
 # Initialize session state
 initialize_session_state()
+
+
+# ---------- Suggestion Helper ----------
+def get_risk_suggestion(sentence: str, category: str) -> str:
+    """
+    Generate a safer, legally/compliance-friendly rewording for a risky sentence,
+    using the shared llm from rag.py.
+    """
+    try:
+        if llm is None:
+            return "⚠ LLM not initialized. Check GROQ_API_KEY and rag.load_llm()"
+
+        prompt_template = PromptTemplate(
+            input_variables=["sentence", "category"],
+            template=(
+                "The following sentence has been flagged as a potential *{category}* risk:\n\n"
+                "{sentence}\n\n"
+                "Please suggest a safer, legally-compliant rewording that reduces the risk while preserving the original intent. "
+                "Keep the response concise and output only the revised sentence."
+            ),
+        )
+
+        chain = LLMChain(llm=llm, prompt=prompt_template)
+        # run with variables
+        response = chain.run({"sentence": sentence, "category": category})
+        return response.strip()
+    except Exception as e:
+        return f"⚠ Failed to generate suggestion: {e}"
+
+
 
 
 def main():
@@ -131,8 +156,7 @@ def main():
         st.image("https://cdn-icons-png.flaticon.com/512/2092/2092663.png", width=100)
     with col2:
         st.title("Advanced AI-Driven Legal Document Summarization and Risk Assessment")
-        # st.markdown("""© 2025 VidzAI - All Rights Reserved
-        #         This software is proprietary and confidential. Any unauthorized use, reproduction, or distribution is strictly prohibited.""")
+
            
     # Main Layout
     tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
@@ -214,7 +238,7 @@ def main():
                             st.session_state.pdf_buffer = pdf_buffer
                             st.success("PDF ready for download!")
 
-    #     # Risk Dashboard
+    # Risk Dashboard
     if st.session_state.document_processed:
         with tab2:
             st.header("Risk Analysis Dashboard")
@@ -360,11 +384,11 @@ def main():
 
                     for category, details in risk_data['categories'].items():
                         with st.expander(f"{category} Risks ({details['count']})"):
-                            st.write(f"**Severity:** {details['severity']}")
-                            st.write(f"**Score Contribution:** {details['score']}")
+                            st.write(f"*Severity:* {details['severity']}")
+                            st.write(f"*Score Contribution:* {details['score']}")
 
                             if details.get("examples"):
-                                st.markdown("**Example Risk Sentences:**")
+                                st.markdown("*Example Risk Sentences:*")
 
                                 for i, sentence in enumerate(details["examples"], 1):
                                     # Build highlighted sentence using HTML <span> so we can use unsafe_allow_html safely
@@ -399,123 +423,9 @@ def main():
 
                             else:
                                 st.write("No specific risky sentences found in this category.")
-    
-    # Risk Dashboard
-    # if st.session_state.document_processed:
-    #     with tab2:
-    #         st.header("Risk Analysis Dashboard")
-    #         risk_data = st.session_state.risk_data
 
-    #         # Risk Metrics
-    #         with st.container(border=True):
-    #             cols = st.columns(4)
-    #             metric_style = """
-    #                 <style>
-    #                     .metric-box {
-    #                         padding: 20px;
-    #                         border-radius: 10px;
-    #                         background: white;
-    #                         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    #                         height: 150px;
-    #                         display: flex;
-    #                         flex-direction: column;
-    #                         justify-content: center;
-    #                     }
-    #                     .metric-title {
-    #                         font-size: 1.1rem;
-    #                         margin-bottom: 8px;
-    #                         font-weight: 600;
-    #                         color: #666;
-    #                     }
-    #                     .metric-value {
-    #                         font-size: 2.5rem;
-    #                         font-weight: 700;
-    #                         line-height: 1.2;
-    #                         color: #dc3545 !important;
-    #                     }
-    #                     .metric-subtext {
-    #                         font-size: 1rem;
-    #                         color: #666;
-    #                     }
-    #                     .risk-critical { color: #dc3545; }
-    #                     .risk-high { color: #ff6b6b; }
-    #                 </style>
-    #             """
-    #             st.markdown(metric_style, unsafe_allow_html=True)
 
-    #             # Overall Risk Score
-    #             with cols[0]:
-    #                 st.markdown(f'''
-    #                     <div class="metric-box">
-    #                         <div class="metric-title risk-critical">Overall Risk Score</div>
-    #                         <div class="metric-value risk-critical">
-    #                             {risk_data.get("total_score", 0)}
-    #                             <span class="metric-subtext">/100</span>
-    #                         </div>
-    #                     </div>
-    #                 ''', unsafe_allow_html=True)
 
-    #             # Total Risks
-    #             with cols[1]:
-    #                 st.markdown(f'''
-    #                     <div class="metric-box">
-    #                         <div class="metric-title">Total Risks</div>
-    #                         <div class="metric-value">
-    #                             {risk_data.get("total_risks", 0)}
-    #                         </div>
-    #                     </div>
-    #                 ''', unsafe_allow_html=True)
-
-    #             # Critical Risks
-    #             with cols[2]:
-    #                 st.markdown(f'''
-    #                     <div class="metric-box">
-    #                         <div class="metric-title risk-critical">Critical Risks</div>
-    #                         <div class="metric-value risk-critical">
-    #                             {risk_data["severity_counts"].get("Critical", 0)}
-    #                         </div>
-    #                     </div>
-    #                 ''', unsafe_allow_html=True)
-
-    #             # High Risks
-    #             with cols[3]:
-    #                 st.markdown(f'''
-    #                     <div class="metric-box">
-    #                         <div class="metric-title risk-high">High Risks</div>
-    #                         <div class="metric-value risk-high">
-    #                             {risk_data["severity_counts"].get("High", 0)}
-    #                         </div>
-    #                     </div>
-    #                 ''', unsafe_allow_html=True)
-
-    #         # Visualizations
-    #         with st.container(border=True):
-    #             fig1, fig2 = visualize_risks(risk_data)
-    #             if fig1 and fig2:
-    #                 col_v1, col_v2 = st.columns(2)
-    #                 with col_v1:
-    #                     st.plotly_chart(fig1, use_container_width=True)
-    #                 with col_v2:
-    #                     st.plotly_chart(fig2, use_container_width=True)
-
-    #         # Detailed Risk Breakdown
-    #         with st.container(border=True):
-    #             st.subheader("Risk Category Breakdown")
-    #             if risk_data.get('categories'):
-    #                 df = pd.DataFrame.from_dict(risk_data['categories'], orient='index')
-    #                 st.dataframe(
-    #                     df,
-    #                     column_config={
-    #                         "score": st.column_config.ProgressColumn(
-    #                             "Score",
-    #                             help="Risk score (0-40)",
-    #                             format="%f",
-    #                             min_value=0,
-    #                             max_value=40,
-    #                         )
-    #                     },
-    #                     use_container_width=True
-    #                 )
 
     # Chat Interface (Now as tab3)
     with tab3:
@@ -748,7 +658,7 @@ def main():
             # Email Reports Section
             with st.container(border=True):
                 st.subheader("Email Reports")
-                email = st.text_input("Recipient Email Address", placeholder="Docusynthai@gmail.com")
+                email = st.text_input("Recipient Email Address", placeholder="legal@company.com")
                 
                 email_col1, email_col2 = st.columns(2)
                 
