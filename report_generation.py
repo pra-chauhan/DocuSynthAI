@@ -154,12 +154,13 @@ def generate_pdf(summary, risk_data, legal_updates=None, compliance_data=None):
                 pdf.ln(5)
 
     try:
-        # ✅ Directly get bytes from FPDF
-        pdf_bytes = pdf.output(dest="S").encode("utf-8", "ignore")  # use utf-8 safe encode
+        # ✅ Correct way: encode with latin-1, not utf-8
+        pdf_bytes = pdf.output(dest="S").encode("latin-1")
         return BytesIO(pdf_bytes)
     except Exception as e:
         st.error(f"Failed to generate PDF: {str(e)}")
         return BytesIO(b"")
+
 
 
 # st.write("DEBUG API Key:", sendgrid_api_key[:10] + "...")
